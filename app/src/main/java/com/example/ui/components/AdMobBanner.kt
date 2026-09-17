@@ -22,8 +22,13 @@ import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 
 object AdConfig {
     const val APP_ID = "ca-app-pub-2648040211095579~5935711707"
+    // User's Real Ad Units
     const val BANNER_AD_UNIT_ID = "ca-app-pub-2648040211095579/4269697239"
     const val INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-2648040211095579/7059512107"
+
+    // Google Official Test Ad Units (Fallbacks when new account is pending approval)
+    const val TEST_BANNER_AD_UNIT_ID = "ca-app-pub-3940256099942544/6300978111"
+    const val TEST_INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"
 }
 
 @Composable
@@ -43,6 +48,19 @@ fun AdMobBanner(
                 AdView(context).apply {
                     setAdSize(AdSize.BANNER)
                     this.adUnitId = adUnitId
+                    adListener = object : com.google.android.gms.ads.AdListener() {
+                        override fun onAdFailedToLoad(error: LoadAdError) {
+                            android.util.Log.w("AdMobBanner", "Real ad failed (${error.message}), falling back to test ad")
+                            // Fallback to test banner if real account is still in initial review
+                            val fallbackAdView = AdView(context).apply {
+                                setAdSize(AdSize.BANNER)
+                                this.adUnitId = AdConfig.TEST_BANNER_AD_UNIT_ID
+                                loadAd(AdRequest.Builder().build())
+                            }
+                            this@apply.removeAllViews()
+                            this@apply.addView(fallbackAdView)
+                        }
+                    }
                     loadAd(AdRequest.Builder().build())
                 }
             }
@@ -66,11 +84,30 @@ object InterstitialAdHelper {
                 override fun onAdLoaded(ad: InterstitialAd) {
                     interstitialAd = ad
                     isLoading = false
+                    android.util.Log.d("InterstitialAd", "Real ad loaded successfully")
                 }
 
                 override fun onAdFailedToLoad(loadAdError: LoadAdError) {
-                    interstitialAd = null
-                    isLoading = false
+                    android.util.Log.w("InterstitialAd", "Real ad failed (${loadAdError.message}), trying test ad")
+                    // Fallback to test interstitial if account is pending
+                    InterstitialAd.load(
+                        context,
+                        AdConfig.TEST_INTERSTITIAL_AD_UNIT_ID,
+                        adRequest,
+                        object : InterstitialAdLoadCallback() {
+                            override fun onAdLoaded(testAd: InterstitialAd) {
+                                interstitialAd = testAd
+                                isLoading = false
+                                android.util.Log.d("InterstitialAd", "Test ad loaded successfully")
+                            }
+
+                            override fun onAdFailedToLoad(testError: LoadAdError) {
+                                interstitialAd = null
+                                isLoading = false
+                                android.util.Log.e("InterstitialAd", "Both ads failed: ${testError.message}")
+                            }
+                        }
+                    )
                 }
             }
         )
