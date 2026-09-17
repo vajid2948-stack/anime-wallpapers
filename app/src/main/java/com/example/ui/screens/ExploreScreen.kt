@@ -74,7 +74,19 @@ fun ExploreScreen(
     onFavoriteToggle: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val quickTags = listOf("All", "4K UHD", "Cyberpunk", "Aesthetic", "Shonen", "AMOLED", "Magic", "Sunset")
+    val quickTags = listOf(
+        "All",
+        "Naruto",
+        "Gojo",
+        "One Piece",
+        "Demon Slayer",
+        "AOT",
+        "Dragon Ball",
+        "Solo Leveling",
+        "Bleach",
+        "4K UHD",
+        "AMOLED"
+    )
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
