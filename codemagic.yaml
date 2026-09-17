@@ -1,21 +1,14 @@
 workflows:
   android-workflow:
-    name: Android Release Workflow
+    name: Android Debug APK Workflow
     max_build_duration: 30
     instance_type: mac_mini_m1
-    environment:
-      android_signing:
-        - keystore_reference
-      groups:
-        - google_play
-      vars:
-        PACKAGE_NAME: "com.aistudio.animewallpapers.wlap"
     scripts:
       - name: Set up local.properties
         script: |
           echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/local.properties"
       - name: Build Android APK
         script: |
-          gradle assembleDebug --no-daemon
+          ./gradlew assembleDebug || gradle assembleDebug
     artifacts:
       - app/build/outputs/**/*.apk
