@@ -5,6 +5,9 @@ import android.app.WallpaperManager
 import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import android.content.Context
+import com.example.data.AppUpdateInfo
+import com.example.data.UpdateManager
 import com.example.data.WallpaperRepository
 import com.example.model.AnimeWallpaper
 import com.example.model.WallpaperCategory
@@ -60,6 +63,19 @@ class WallpaperViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val _downloadStatus = MutableStateFlow<DownloadStatus>(DownloadStatus.Idle)
     val downloadStatus: StateFlow<DownloadStatus> = _downloadStatus.asStateFlow()
+
+    private val _updateInfo = MutableStateFlow<AppUpdateInfo?>(null)
+    val updateInfo: StateFlow<AppUpdateInfo?> = _updateInfo.asStateFlow()
+
+    private val _isCheckingUpdate = MutableStateFlow(false)
+    val isCheckingUpdate: StateFlow<Boolean> = _isCheckingUpdate.asStateFlow()
+
+    val currentVersionName: String = UpdateManager.getCurrentVersionName(application)
+
+    init {
+        // Automatically check for updates on app startup
+        checkForUpdates(manual = false)
+    }
 
     val favorites: StateFlow<Set<String>> = repository.favorites
 
@@ -164,5 +180,27 @@ class WallpaperViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun clearDownloadStatus() {
         _downloadStatus.value = DownloadStatus.Idle
+    }
+
+    fun checkForUpdates(manual: Boolean = false, onMessage: ((String) -> Unit)? = null) {
+        viewModelScope.launch {
+            _isCheckingUpdate.value = true
+            val info = UpdateManager.checkForUpdate(getApplication())
+            _isCheckingUpdate.value = false
+            if (info.hasUpdate) {
+                _updateInfo.value = info
+            } else if (manual) {
+                onMessage?.invoke("You're using the latest version (v$currentVersionName)! ✨")
+            }
+        }
+    }
+
+    fun dismissUpdateDialog() {
+        _updateInfo.value = null
+    }
+
+    fun openUpdateDownload(context: Context) {
+        val info = _updateInfo.value ?: return
+        UpdateManager.openDownloadUrl(context, info.downloadUrl)
     }
 }

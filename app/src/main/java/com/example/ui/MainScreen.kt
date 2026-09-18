@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -51,7 +52,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,6 +70,7 @@ import com.example.R
 import com.example.model.WallpaperCategory
 import com.example.ui.components.AdMobBanner
 import com.example.ui.components.InterstitialAdHelper
+import com.example.ui.components.UpdateDialog
 import com.example.ui.components.WallpaperDetailModal
 import com.example.ui.screens.CategoriesScreen
 import com.example.ui.screens.ExploreScreen
@@ -95,9 +99,12 @@ fun MainScreen(
     val selectedWallpaper by viewModel.selectedWallpaper.collectAsState()
     val applyStatus by viewModel.applyStatus.collectAsState()
     val downloadStatus by viewModel.downloadStatus.collectAsState()
+    val updateInfo by viewModel.updateInfo.collectAsState()
+    val isCheckingUpdate by viewModel.isCheckingUpdate.collectAsState()
 
     var isSearchActive by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
     // React to Apply status
@@ -222,6 +229,23 @@ fun MainScreen(
                             )
                         }
                     } else {
+                        IconButton(
+                            onClick = {
+                                viewModel.checkForUpdates(manual = true) { msg ->
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar(msg)
+                                    }
+                                }
+                            },
+                            modifier = Modifier.testTag("check_update_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.SystemUpdate,
+                                contentDescription = "Check for Updates",
+                                tint = AnimeNeonCyan
+                            )
+                        }
+
                         IconButton(
                             onClick = { isSearchActive = true },
                             modifier = Modifier.testTag("open_search_button")
@@ -394,6 +418,18 @@ fun MainScreen(
                     },
                     onShare = { viewModel.shareWallpaper(wp) }
                 )
+            }
+
+            // In-App Update Dialog
+            updateInfo?.let { info ->
+                if (info.hasUpdate) {
+                    UpdateDialog(
+                        updateInfo = info,
+                        currentVersionName = viewModel.currentVersionName,
+                        onUpdateClick = { viewModel.openUpdateDownload(context) },
+                        onDismiss = { viewModel.dismissUpdateDialog() }
+                    )
+                }
             }
         }
     }
