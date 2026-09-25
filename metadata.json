@@ -1,6 +1,6 @@
 {
   "name": "Anime Wallpapers",
-  "description": "Explore, preview, favorite, and set high-quality anime wallpapers across popular genres and aesthetic categories.",
+  "description": "Explore, preview, favorite, and set 4K Ultra-HD anime, supercars, and superbikes wallpapers with high performance.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
